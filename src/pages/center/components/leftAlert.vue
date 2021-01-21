@@ -2,9 +2,8 @@
 <!-- 设置工厂上机状态 -->
 
 <template>
-  <el-dialog title="设置工厂上机状态" width="70%" :visible.sync="showDialog" :close-on-click-modal="false" :close-on-press-escape="false">
+  <el-dialog title="设置工厂上机状态" width="70%" :visible.sync="showDialog" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false">
     <p class="tips red">请双击日期单元格来标注班组产能已被占用的日期</p>
-
     <div class="allBox">
 
       <!-- 左侧班组 -->
@@ -23,19 +22,19 @@
             <span class="dayBlock op0" v-for="(val, key) in [item.list[0]]" :key="'day_week_' + key">{{val.week}}</span>
           </li>
           <!-- 班组 -->
-          <li class="dayBox nameSpan hover" v-for="(active, activeIndex) in dataList" :key="'activeLine_0_' + activeIndex">
-            <el-popover placement="top-start" trigger="click" ref="popover">
+          <li class="dayBox nameSpan hover" v-for="(active, activeIndex) in leftAlertData" :key="'activeLine_0_' + activeIndex">
+            <el-popover placement="top-start" trigger="click" ref="popover" v-model="showPopover[activeIndex]">
               <div class="comPopoverContentBox">
                 <span>【{{active.name}}】产能被占用时间段：</span>
                 <el-input class="comTimeInput" size="mini" maxlength="10" placeholder="请输入开始时间"
-                  v-model="active.start" @change="inputChange(activeIndex, 'start')"
+                  v-model="active.start"
                 ></el-input>
                 <span>&nbsp;&nbsp;至&nbsp;&nbsp;</span>
                 <el-input class="comTimeInput" size="mini" maxlength="10" placeholder="请输入结束时间"
-                  v-model="active.end" @change="inputChange(activeIndex, 'end')"
+                  v-model="active.end"
                 ></el-input>
                 <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                <!-- <el-button size="mini" @click="choiceTime(activeIndex)">确 定</el-button> -->
+                <el-button size="mini" @click="choiceTime(activeIndex)">确 定</el-button>
               </div>
               <p slot="reference" :class="String(nowLineIndex) === String(activeIndex) ? 'red' : ''"
                 @click="clickName(activeIndex)"
@@ -63,10 +62,10 @@
             <span class="dayBlock" v-for="(val, key) in item.list" :key="'day_week_' + key">{{val.week}}</span>
           </li>
           <!-- 循环数据 -->
-          <li class="dayBox" v-for="(active, activeIndex) in dataList" :key="'activeLine_' + activeIndex">
+          <li class="dayBox" v-for="(active, activeIndex) in leftAlertData" :key="'activeLine_' + activeIndex">
             <span class="dayBlock" v-for="(val, key) in item.list" :key="'day_3_' + key"
-              :style="{ background: active.numObj && active.numObj[val.num] ? '#a6c9e2' : '' }"
-              @dblclick="active.numObj && active.numObj[val.num] ? deleteDay(val.num, activeIndex) : ''"
+              :style="{ background: active.numObj && active.numObj[val.num] && active.numObj[val.num].isShow ? (active.numObj[val.num].isCancel ? '#a6c9e2' : '#C0C4CC') : '' }"
+              @dblclick="(active.numObj && (!active.numObj[val.num] || (active.numObj[val.num] && active.numObj[val.num].isCancel !== false))) ? toggleDay(val.num, activeIndex) : ''"
             >
             </span>
           </li>
@@ -83,59 +82,23 @@
 </template>
 
 <script>
-import LocalData from '../../../store/data.js'
+import { mapState } from 'vuex'
 import Tool from '../../../store/tool.js'
 export default {
-  // props: ['showDialog', 'alertData'],
+  props: ['showDialog', 'alertData'],
   data() {
     return {
-      showDialog: false, // 开发数据
+      // showDialog: true, // 开发数据
+      showPopover: {},
       nowLineIndex: -1, // 当前激活的行索引
       dataList: {},
       timeArr: [] // 时间数组
     }
   },
-  watch: {
-    alertData() {
-      const { showDialog, alertData: { data = [] } } = this
-      if (showDialog) {
-        const obj = {}
-        const arr = []
-        data.forEach(function (item) {
-          if (item.group_name !== '待排产') {
-            arr.push(item)
-          }
-        })
-        arr.forEach(function (item, index) {
-          item.name = item.group_name
-          item.start = ''
-          item.end = ''
-          item.time = {}
-          obj[index] = Object.assign({}, item)
-        })
-        this.dataList = obj
-      }
-    }
+  computed: {
+    ...mapState(['leftAlertData'])
   },
   created() {
-    /* 开发数据 */
-    const { data = [] } = JSON.parse(LocalData['弹出层数据'])
-    const obj = {}
-    const arr = []
-    data.forEach(function (item) {
-      if (item.group_name !== '待排产') {
-        arr.push(item)
-      }
-    })
-    arr.forEach(function (item, index) {
-      item.name = item.group_name
-      item.start = ''
-      item.end = ''
-      item.time = {}
-      obj[index] = Object.assign({}, item)
-    })
-    this.dataList = obj
-
     /* 默认：取最近两个月的日期 */
     const timeArr = []
     const { nowDate, afterDate } = Tool._otherMonth()
@@ -143,72 +106,16 @@ export default {
     timeArr.push({ name: afterDate, list: Tool._allDay(afterDate) })
     this.timeArr = timeArr
   },
-  mounted: function () {
-    const { dataList = {} } = this
-    const length = Object.keys(dataList).length
-    window.addEventListener('keydown', (item) => {
-      const { nowLineIndex } = this
-      let nowIndex = nowLineIndex
-      /* ----- 按键：下 ----- */
-      if (item.keyCode === 40 && nowLineIndex + 1 < length) {
-        try {
-          /* 显示：悬浮层 && 聚焦：第一个input */
-          this.$refs.popover[nowLineIndex + 1].doShow()
-          const that = this
-          setTimeout(function () {
-            that.$refs.popover[nowIndex].$children[0].focus()
-          }, 0)
-          /* 关闭：之前的悬浮层 */
-          this.$refs.popover[nowLineIndex].doClose()
-        } catch (err) {
-          //
-        }
-        nowIndex += 1
-      }
-      /* ----- 按键：上 ----- */
-      if (item.keyCode === 38 && nowLineIndex - 1 > -1) {
-        try {
-          /* 显示：悬浮层 && 聚焦：第一个input */
-          this.$refs.popover[nowLineIndex - 1].doShow()
-          const that = this
-          setTimeout(function () {
-            that.$refs.popover[nowIndex].$children[0].focus()
-          }, 0)
-          /* 关闭：之前的悬浮层 */
-          this.$refs.popover[nowLineIndex].doClose()
-        } catch (err) {
-          //
-        }
-        nowIndex -= 1
-      }
-      /* ----- 按键：左 ----- */
-      if (item.keyCode === 37) {
-        try {
-          this.$refs.popover[nowIndex].$children[0].focus()
-        } catch (err) {
-          //
-        }
-      }
-      /* ----- 按键：右 ----- */
-      if (item.keyCode === 39) {
-        try {
-          this.$refs.popover[nowIndex].$children[1].focus()
-        } catch (err) {
-          //
-        }
-      }
-      /* ----- 赋值 ----- */
-      this.nowLineIndex = nowIndex
-    })
-  },
   methods: {
     /**
      * [点击：班组名称]
      * @param {[String]} activeIndex 班组索引
      */
     clickName(activeIndex) {
+      console.log(222, activeIndex)
       /* 选中 */
       this.nowLineIndex = parseInt(activeIndex)
+      this.showPopover[activeIndex] = true
       /* 第一个input聚焦 */
       const that = this
       setTimeout(function () {
@@ -216,49 +123,62 @@ export default {
       }, 0)
     },
     /**
-     * [失焦：input]
+     * [设置时间]
      * @param {[String]} activeIndex 班组索引
-     * @param {[String]} name        字段名
      */
-    inputChange(activeIndex, name) {
-      const obj = this.dataList[activeIndex]
+    choiceTime(activeIndex) {
+      const obj = this.leftAlertData[activeIndex]
+      const { start, end } = obj
       /* ----- 转换时间 ----- */
-      if (obj.start && name === 'end' && new Date(obj.start).getTime() > new Date(Tool._toggleTime(obj[name])).getTime()) {
-        this.$message({ message: '结束时间不能早于开始时间', type: 'warning' })
-        obj[name] = ''
-      } else if (obj.end && name === 'start' && new Date(Tool._toggleTime(obj[name])).getTime() > new Date(obj.end).getTime()) {
+      if (start && end && new Date(Tool._toggleTime(start)).getTime() > new Date(Tool._toggleTime(end)).getTime()) {
         this.$message({ message: '开始时间不能晚于结束时间', type: 'warning' })
-        obj[name] = ''
       } else {
-        obj[name] = Tool._toggleTime(obj[name])
+        obj.start = Tool._toggleTime(start)
+        obj.end = Tool._toggleTime(end)
         /* ----- 解析日期：占用时间区间（色块） ----- */
-        const { start, end } = obj
-        let numObj = {}
+        const { numObj } = obj
+        /* 删除之前添加的时间 */
+        for (const x in numObj) {
+          if (numObj[x].isCancel) {
+            delete numObj[x]
+          }
+        }
+        /* 添加时间 */
         if (start && !end) {
           /* 开始时间 */
-          numObj[new Date(start).getTime()] = true
+          numObj[new Date(start).getTime()] = { isShow: true, isCancel: true }
         }
         if (!start && end) {
           /* 结束时间 */
-          numObj[new Date(end).getTime()] = true
+          numObj[new Date(end).getTime()] = { isShow: true, isCancel: true }
         }
         if (start && end) {
           /* 时间区间 */
-          numObj = Object.assign({}, Tool._dayToDayNums(start, end))
+          const adyObj = Tool._dayToDayNums(obj.start, obj.end)
+          for (const x in adyObj) {
+            if (!numObj[x]) {
+              numObj[x] = Object.assign({}, adyObj[x])
+            }
+          }
         }
-        obj.numObj = numObj
-        this.dataList[activeIndex] = Object.assign({}, obj)
+        obj.numObj = Object.assign({}, numObj)
+        this.leftAlertData[activeIndex] = Object.assign({}, obj)
       }
+      this.showPopover[activeIndex] = false
     },
     /**
-     * [删除日期]
+     * [切换日期]
      * @param {[Int]}    num         毫秒数
      * @param {[String]} activeIndex 班组索引
      */
-    deleteDay(num, activeIndex) {
-      const obj = this.dataList[activeIndex]
-      delete obj.numObj[num]
-      this.dataList[activeIndex] = Object.assign({}, obj)
+    toggleDay(num, activeIndex) {
+      const obj = this.leftAlertData[activeIndex]
+      if (obj.numObj[num]) {
+        delete obj.numObj[num]
+      } else {
+        obj.numObj[num] = { isShow: true, isCancel: true }
+      }
+      this.leftAlertData[activeIndex] = Object.assign({}, obj)
     },
     /**
      * [取消]
@@ -270,16 +190,21 @@ export default {
      * [保存]
      */
     save() {
-      const { dataList } = this
-      const obj = {}
-      for (const x in dataList) {
-        const item = dataList[x]
+      const { leftAlertData = {}, alertData = {} } = this
+      const { provider_id } = alertData
+      const arr = []
+      for (const x in leftAlertData) {
+        const item = leftAlertData[x]
+        const obj = {}
         if (item.numObj && Object.keys(item.numObj).length) {
-          item.timeArr = Tool._numToTimeSection(item.numObj).timeArr
-          obj[x] = Object.assign({}, item)
+          const timeArr = Tool._numToTimeSection(item.numObj).timeSectionArr
+          obj.plant_group_id = item.plant_group_id
+          obj.dates = timeArr.join(',')
+          arr.push(obj)
         }
       }
-      console.log('保存 ----- ', obj, dataList)
+      /** 请求：设置上机时间段 **/
+      this.$store.dispatch('A_addTakeUp', { arr, provider_id, that: this })
     },
     /**
      * [添加月份]

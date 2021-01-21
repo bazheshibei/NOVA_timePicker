@@ -8,7 +8,7 @@
     <com-left-box></com-left-box>
 
     <!-- 右侧区域 -->
-    <com-right-box></com-right-box>
+    <com-right-box style="max-width: calc(85% - 30px);"></com-right-box>
 
   </div>
 </template>
@@ -24,6 +24,9 @@ export default {
     }
   },
   created() {
+    /** 请求：帮助按钮 **/
+    this.$store.dispatch('A_getHelpText')
+    //
     try {
       /* 平台方法 */
       // eslint-disable-next-line

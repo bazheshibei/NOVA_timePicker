@@ -59,12 +59,12 @@ module.exports = {
 
   build: {
     // Template for index.html
-    index: path.resolve(__dirname, '../itemganttsummary/itemInternalControlNodeForm.html'),
+    index: path.resolve(__dirname, '../dailyproductionentrypc/dailyproductionentrypcFrom.html'),
 
     // Paths
-    assetsRoot: path.resolve(__dirname, '../itemganttsummary'),
-    assetsSubDirectory: 'itemInternalControlNodeForm',
-    assetsPublicPath: '/nova/pages/itemganttsummary/',
+    assetsRoot: path.resolve(__dirname, '../dailyproductionentrypc'),
+    assetsSubDirectory: 'dailyproductionentrypcFrom',
+    assetsPublicPath: '/nova/pages/dailyproductionentrypc/',
 
     /**
      * Source Maps

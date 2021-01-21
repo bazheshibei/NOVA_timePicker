@@ -15,7 +15,25 @@
       @node-click="handleNodeClick"
     >
       <div class="comTreeLineBox" slot-scope="{ node, data }">
-        <p class="comTreeLineName">{{data.label}}</p>
+        <!-- 标题：第一级 -->
+        <p v-if="data.pid === 1" class="comTreeLineName">{{data.label}}</p>
+        <!-- 标题：第三级 -->
+        <el-popover v-else-if="data.pid === 3" placement="right" trigger="hover" ref="popover">
+          <p>
+            订单数{{data.dress_total || 0}}{{data.jjc ? `(${data.jjc})` : ''}}，当前工厂委外数{{data.dress_total_po || 0}}，{{data.dress_part_type}}计划生产数{{data.has_arranged_num || 0}}，共领料数{{data.picking_total || 0}}，累计产量{{data.production_total || 0}}
+          </p>
+          <p slot="reference" class="comTreeLineName">
+            <span>{{data.label}}</span>
+            <br>
+            <!-- 待排产 -->
+            <span v-if="data.cate === 0">({{data.group_name}}-{{data.dress_part_type}}-{{data.dress_total_po || 0}}件{{data.tobe_arranged_num ? `-待排${data.tobe_arranged_num}件` : ''}})</span>
+            <!-- 项目 -->
+            <span v-else>({{data.group_name}}-{{data.dress_part_type}}-{{data.distribution_production_num || 0}}件)</span>
+          </p>
+        </el-popover>
+        <!-- 标题：第二级 -->
+        <p v-else class="comTreeLineName">{{data.label}}</p>
+        <!-- 下拉按钮组：第一级 -->
         <el-dropdown v-if="data.pid === 1" class="comTreeLineIcon" trigger="click" @command="handleCommand(data.index, $event)">
           <span class="el-dropdown-link">
             <i class="el-icon-edit-outline"></i>
@@ -101,14 +119,15 @@ export default {
       if (status) {
         /* 显示：提取工厂数据 */
         const { leftTreeData } = this
-        console.log('xxxxx ----- ', Object.assign({}, leftTreeData[index]), index)
         this.alertData = Object.assign({}, leftTreeData[index])
+        /** 请求：工厂上机状态 **/
+        const { provider_id } = leftTreeData[index]
+        this.$store.dispatch('A_showTakeUp', { plant_id: provider_id, that: this, userid: '40674d3bf2b84bf48b2a73db0d5af2ee' })
       } else {
-        /* 隐藏：置空 */
+        /* 置空数据 && 隐藏弹出层 */
         this.alertData = Object.assign({})
+        this.showDialog = false
       }
-      /* 显示 || 隐藏 */
-      this.showDialog = status
     },
     /**
      * [过滤]
@@ -117,7 +136,12 @@ export default {
      */
     filterNode(value, data) {
       if (!value) return true
-      return data.label.indexOf(value) !== -1
+      const { selectObj = {} } = data
+      for (const x in selectObj) {
+        if (x.indexOf(value) !== -1) {
+          return true
+        }
+      }
     },
     /**
      * [展开]
@@ -153,8 +177,26 @@ export default {
         arr.push(obj[x])
       }
       this.showArr = arr
-      /** 请求：详情列表 **/
-      this.$store.dispatch('A_dataList', { data })
+      /* 剔除：待排产 && 记录当前工厂ID */
+      const { pid, label, provider_id = '', plant_group_id = '', daily_production_entry_id = '' } = data
+      if (label !== '待排产') {
+        let activeId = ''
+        let params = {}
+        if (pid === 1) {
+          activeId = `${provider_id}`
+          params = { plant_id: provider_id } //                                            { 工厂ID }
+        } else if (pid === 2) {
+          activeId = `${provider_id}_${plant_group_id}`
+          params = { plant_id: provider_id, plant_group_id } //                            { 工厂ID, 班组ID }
+        } else if (pid === 3) {
+          activeId = `${provider_id}_${plant_group_id}_${daily_production_entry_id}`
+          params = { plant_id: provider_id, plant_group_id, daily_production_entry_id } // { 工厂ID, 班组ID, 日产量项目工厂ID }
+        }
+        this.$store.commit('saveData', { name: 'activeId', obj: activeId })
+        this.$store.commit('saveData', { name: 'apiParams', obj: params })
+        /** 请求：详情列表 **/
+        this.$store.dispatch('A_dataList')
+      }
     },
     /**
      * [递归]
@@ -217,10 +259,19 @@ export default {
 
 <style>
 /*** 树状组件 ***/
-.comTree > .el-tree-node > .el-tree-node__content {
-  height: auto !important;
+.filterInputBox { /* 搜索框 */
+  margin: 0 !important;
+  padding: 4px !important;
+  background: #ffffff !important;
+  z-index: 2 !important;
+}
+.el-tree-node__content {
+  height: max-content !important;
   min-height: 22px !important;
   padding: 2px 0;
+}
+.el-tree-node__content > .el-tree-node__expand-icon { /* 下拉箭头 */
+  padding: 0 !important;
 }
 
 /*** 下拉按钮 ***/

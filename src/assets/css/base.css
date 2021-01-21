@@ -307,6 +307,9 @@ td > .cell {
   transform: rotate(35deg);
   transform-origin: center;
 }
+.op0 {
+  opacity: 0;
+}
 
 /* -------------------- 顶部表单 -------------------- */
 .formLine { /* 单行 */

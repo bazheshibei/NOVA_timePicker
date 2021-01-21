@@ -18,6 +18,7 @@ Tool.returnTreeData = function (data = []) {
     item.pid = 1
     item.index = index + ''
     item.data = item.data || []
+    item.selectObj = { [item.provider_name]: true }
     item.data.map(function (val = {}, key) {
       val.label = `${val.group_name}【${val.size}】`
       val.id = val.plant_group_id
@@ -25,17 +26,23 @@ Tool.returnTreeData = function (data = []) {
       val.index = `${index}_${key}`
       val.provider_id = item.provider_id
       val.data = val.data || []
+      val.selectObj = { [item.provider_name]: true, [`${val.group_name}【${val.size}】`]: true }
+      item.selectObj[`${val.group_name}【${val.size}】`] = true
       val.data.map(function (child = {}, childKey) {
         child.label = child.item_name
         child.id = child.daily_production_overview_detail_id
         child.pid = 3
+        child.cate = val.group_name === '待排产' ? 0 : 1
         child.index = `${index}_${key}_${childKey}`
         child.provider_id = item.provider_id
         child.plant_group_id = val.plant_group_id
+        child.selectObj = { [item.provider_name]: true, [`${val.group_name}【${val.size}】`]: true, [child.item_name]: true }
+        item.selectObj[child.item_name] = true
+        val.selectObj[child.item_name] = true
       })
     })
   })
-  console.log('返回：整理后的左侧列表树数据', data)
+  // console.log('返回：整理后的左侧列表树数据', data)
   return data
 }
 
@@ -55,6 +62,41 @@ Tool.returnTableData = function (data = []) {
     item.timeObj = obj
   })
   return data
+}
+
+/**
+ * [返回：整理后的工厂上机状态]
+ * @param  {[Array]} data     工厂上机状态数组
+ * @return {[Array]} dataList 整理后的数组
+ */
+Tool.returnShowTakeUp = function (data = []) {
+  const dataList = {}
+  const dataArr = []
+  data.forEach(function (item) {
+    if (item.group_name !== '待排产') {
+      dataArr.push(item)
+    }
+  })
+  dataArr.forEach(function (item, index) {
+    item.name = item.group_name
+    item.start = ''
+    item.end = ''
+    item.time = {}
+    item.numObj = {}
+    /* 解析日期 */
+    const dayArr = item.dates && item.dates !== null ? item.dates.split(',') : []
+    dayArr.forEach(function (str) {
+      if (str.indexOf('_') > -1) {
+        const [start, end] = str.split('_')
+        item.numObj = Object.assign({}, item.numObj, Tool._dayToDayNums(start, end, false))
+      } else {
+        item.numObj[str] = true
+      }
+    })
+    /* 赋值 */
+    dataList[index] = Object.assign({}, item)
+  })
+  return dataList
 }
 
 /** --------------------------- 工具方法 --------------------------- **/
@@ -112,18 +154,19 @@ Tool._otherMonth = function (time = '') {
 
 /**
  * [返回：两个日期之间每天的毫秒数]
- * @param  {[String]} day_1 开始时间
- * @param  {[String]} day_2 结束时间
- * @return {[Object]} obj   毫秒数对象：{ 123498282: true, 3947382882: true }
+ * @param  {[String]}  day_1    开始时间
+ * @param  {[String]}  day_2    结束时间
+ * @param  {[Boolean]} isCancel 是否可以取消
+ * @return {[Object]}  obj      毫秒数对象：{ 123498282: { isShow: true, isCancel: true }, 3947382882: { isShow: true, isCancel: false } }
  */
-Tool._dayToDayNums = function (day_1, day_2) {
+Tool._dayToDayNums = function (day_1, day_2, isCancel = true) {
   const obj = {}
   const oneDay = 1000 * 60 * 60 * 24
   let num_1 = new Date(day_1).getTime()
   const num_2 = new Date(day_2).getTime()
   for (let i = 0; ; i++) {
     if (num_1 <= num_2) {
-      obj[num_1] = true
+      obj[num_1] = { isShow: true, isCancel }
       num_1 += oneDay
     } else {
       break
@@ -134,9 +177,9 @@ Tool._dayToDayNums = function (day_1, day_2) {
 
 /**
  * [毫秒数 转为 时间区间]
- * @param  {[Object]} numObj         毫秒数对象：{ 123498282: true, 3947382882: true }
+ * @param  {[Object]} numObj         毫秒数对象：{ 123498282: { isShow: true, isCancel: true }, 3947382882: { isShow: true, isCancel: true } }
  * @return {[Array]}  timeArr        单个时间数组：['2020-09-01']
- * @return {[Array]}  timeSectionArr 时间区间数组：['2020-09-01至2020-09-02', '2020-09-11']
+ * @return {[Array]}  timeSectionArr 时间区间数组：['2020-09-01_2020-09-02', '2020-09-11']
  */
 Tool._numToTimeSection = function (numObj) {
   // const numObj = JSON.parse('{"1598918400000":true,"1599004800000":true,"1599177600000":true,"1599264000000":true,"1599350400000":true,"1599436800000":true,"1599523200000":true,"1599609600000":true,"1599782400000":true,"1599955200000":true,"1600128000000":true,"1600300800000":true,"1600473600000":true,"1600560000000":true,"1600646400000":true,"1600732800000":true,"1600819200000":true,"1600905600000":true,"1600992000000":true,"1601078400000":true,"1601251200000":true,"1601337600000":true,"1601424000000":true,"1601510400000":true}')
@@ -166,7 +209,7 @@ Tool._numToTimeSection = function (numObj) {
         }
         /* 之前的时间区间：有开始、结束时间 */
         if (str_1 && str_2) {
-          timeSectionArr.push(`${this._returnYearMonthDay(parseInt(str_1))}至${this._returnYearMonthDay(parseInt(str_2))}`)
+          timeSectionArr.push(`${this._returnYearMonthDay(parseInt(str_1))}_${this._returnYearMonthDay(parseInt(str_2))}`)
         }
         /* 开始新区间 */
         str_1 = x
