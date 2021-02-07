@@ -5,7 +5,8 @@ import Axios from '@/config/axios'
 /**
  * [服务器地址]
  */
-// const host = '/api/'
+// const host = '/api_z/'
+// const host = '/api_f/'
 const host = window.location.origin + '/nova/'
 
 /**

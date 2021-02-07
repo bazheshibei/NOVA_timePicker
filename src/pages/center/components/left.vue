@@ -71,7 +71,7 @@ export default {
   },
   created() {
     /** 请求：列表树 **/
-    this.$store.dispatch('A_treeAll')
+    this.$store.dispatch('A_treeAll', { that: this })
     /* 列表树距顶部高度 */
     const that = this
     let i = 0

@@ -83,18 +83,15 @@
     <!-- 弹出层：当前日期详情 -->
     <el-dialog title="提示" :visible.sync="isShowDayDetail" width="550px">
       <div slot="title">
-        <span>
-          {{dialogData.day}}
-          &nbsp;&nbsp;
-          {{dialogData.group_name}}
-          &nbsp;&nbsp;
-          {{dialogData.item_name}}
-          &nbsp;&nbsp;
-          日产量：累计{{dialogData.daily_production_total || 0}}件
-        </span>
+        <p>
+          <span>{{dialogData.day}}&nbsp;&nbsp;</span>
+          <span>{{dialogData.group_name}}&nbsp;&nbsp;</span>
+          <span>{{dialogData.item_name}}&nbsp;&nbsp;</span>
+          <span v-if="String(dialogData.status) !== '4'">日产量：累计{{dialogData.daily_production_total || 0}}件</span>
+        </p>
       </div>
       <div class="comDialogContentBox">
-        <div>
+        <div v-if="String(dialogData.status) !== '4'">
           <p>
             机工：{{dialogData.machine_num || 0}}
             &nbsp;&nbsp;
@@ -104,6 +101,11 @@
           </p>
           <p>
             领料数：{{dialogData.picking_num || 0}}
+          </p>
+        </div>
+        <div v-else>
+          <p>
+            未提报
           </p>
         </div>
         <div>
@@ -323,9 +325,9 @@ export default {
       const { rightTableData, activeId } = this
       const item = rightTableData[activeId][activeIndex]
       const dayObj = item.timeObj[day]
-      const { group_name, item_name, daily_production_total = '？', machine_num = '？', auxiliary_num = '？', daily_production_num = '？', picking_num = '？' } = dayObj
+      const { status, group_name, item_name, daily_production_total = '？', machine_num = '？', auxiliary_num = '？', daily_production_num = '？', picking_num = '？' } = dayObj
       // 提报日期，班组名，项目名，累计产量，机工，辅工，日产量，领料数
-      const dialogData = { day, group_name, item_name, daily_production_total, machine_num, auxiliary_num, daily_production_num, picking_num }
+      const dialogData = { status, day, group_name, item_name, daily_production_total, machine_num, auxiliary_num, daily_production_num, picking_num }
       this.dialogData = Object.assign({}, dialogData)
       this.isShowDayDetail = true
     },

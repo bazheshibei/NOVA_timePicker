@@ -11,7 +11,7 @@ const Prod = {}
 /**
  * [请求：列表树]
  */
-Prod.A_treeAll = function (state, { fun = function () {} }) {
+Prod.A_treeAll = function (state, { that = {} }) {
   const name = '列表树'
   // const obj = { userid: '40674d3bf2b84bf48b2a73db0d5af2ee' }
   const obj = { userid: '' }
@@ -19,7 +19,54 @@ Prod.A_treeAll = function (state, { fun = function () {} }) {
     // console.log('列表树 ----- ', res)
     // localStorage.setItem('列表树', JSON.stringify(res))
     state.leftTreeData = Tool.returnTreeData(res.data)
-    fun()
+    /* 筛选 */
+    setTimeout(function () {
+      const { filterText = '' } = JSON.parse(localStorage.getItem('NOVA_dailyproductionentrypc') || '{}')
+      if (filterText) {
+        that.filterText = filterText
+        localStorage.removeItem('NOVA_dailyproductionentrypc')
+        /* 点击第一个选项 */
+        const { tree = {} } = that.$refs
+        const { $el = {} } = tree
+        const { childNodes = [] } = $el
+        let isBreak = false
+        for (let i = 0; i < childNodes.length; i++) {
+          /* 筛选：工厂 */
+          const item = childNodes[i] || {}
+          if (item.innerText.indexOf(filterText) !== -1) {
+            item.click()
+            isBreak = true
+            break
+          }
+          /* 筛选：班组 */
+          const list_1 = item.children || []
+          for (let j = 0; j < list_1.length; j++) {
+            const val = list_1[j] || {}
+            if (val.innerText.indexOf(filterText) !== -1) {
+              item.click()
+              isBreak = true
+              break
+            }
+            /* 筛选：项目 */
+            const list_2 = val.children || []
+            for (let m = 0; m < list_2.length; m++) {
+              const div = list_2[m]
+              if (div.innerText.indexOf(filterText) !== -1) {
+                item.click()
+                isBreak = true
+                break
+              }
+            }
+            if (isBreak) {
+              break
+            }
+          }
+          if (isBreak) {
+            break
+          }
+        }
+      }
+    }, 0)
   }
   Api({ name, obj, suc, loading: '数据加载中...' })
 }
@@ -76,11 +123,6 @@ Prod.A_addTakeUp = function (dispatch, params) {
     that.cancel()
     /* 更新数据：列表树 -> 详情列表 */
     dispatch('A_dataList', { f5: true })
-    // const fun = function () {
-    //   // dispatch('A_dataList', { plant_id: provider_id })
-    //   dispatch('A_dataList')
-    // }
-    // dispatch('A_treeAll', { fun })
   }
   Api({ name, obj, suc, loading: '保存中...' })
 }
