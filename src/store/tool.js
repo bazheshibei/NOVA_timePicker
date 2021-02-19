@@ -47,6 +47,65 @@ Tool.returnTreeData = function (data = []) {
 }
 
 /**
+ * [筛选：符合关键字的 工厂、班组、项目]
+ * @param {[Array]}  list_1     列表树数组
+ * @param {[String]} filterText 搜索关键字
+ * @return {[type]} [description]
+ */
+Tool.dressingByScreening = function (list_1 = [], filterText = '') {
+  const dataArr = []
+  list_1.forEach(obj_1 => {
+    const { provider_id = '' } = this._labelIndexOfText(obj_1, filterText)
+    if (provider_id) {
+      /* 匹配到：工厂 */
+      dataArr.push({ plant_id: provider_id }) // , obj_1: obj_1.label
+    } else {
+      /* 没匹配到：循环班组 */
+      const list_2 = obj_1.data || []
+      list_2.forEach(obj_2 => {
+        const { provider_id = '', plant_group_id = '' } = this._labelIndexOfText(obj_2, filterText)
+        if (plant_group_id) {
+          dataArr.push({ plant_id: provider_id, plant_group_id }) // , obj_1: obj_1.label, obj_2: obj_2.label
+        } else {
+          /* 没匹配到：循环项目 */
+          const list_3 = obj_2.data || []
+          list_3.forEach(obj_3 => {
+            const { provider_id = '', plant_group_id = '', daily_production_entry_id = '' } = this._labelIndexOfText(obj_3, filterText)
+            if (daily_production_entry_id) {
+              dataArr.push({ plant_id: provider_id, plant_group_id, daily_production_entry_id }) // , obj_1: obj_1.label, obj_2: obj_2.label, obj_3: obj_3.label
+            }
+          })
+        }
+      })
+    }
+  })
+  return dataArr
+}
+
+/**
+ * [匹配：此对象是否包含关键字]
+ * @param  {[Object]} item       数据对象
+ * @param  {[String]} filterText 关键字：空格表示 || 关系
+ * @return {[Object]} { provider_id: '工厂ID', plant_group_id: '班组ID', daily_production_entry_id: '日产量项目工厂ID' }
+ */
+Tool._labelIndexOfText = function (item = {}, filterText = '') {
+  const textArr = filterText.split(' ') // 拆分关键字：空格，||
+  let provider_id = ''
+  let plant_group_id = ''
+  let daily_production_entry_id = ''
+  for (let i = 0; i < textArr.length; i++) {
+    const text = textArr[i]
+    if (text && item.label.indexOf(text) !== -1) {
+      provider_id = item.provider_id || ''
+      plant_group_id = item.plant_group_id || ''
+      daily_production_entry_id = item.daily_production_entry_id || ''
+      break
+    }
+  }
+  return { provider_id, plant_group_id, daily_production_entry_id }
+}
+
+/**
  * [返回：整理后的右侧表格数据]
  * @param  {[Array]} data 项目数组
  * @return {[Array]} data 整理后的数组

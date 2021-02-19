@@ -13,7 +13,7 @@ module.exports = {
     assetsPublicPath: '/',
     proxyTable: {
       '/api_z': {
-        target: 'http://192.168.8.139:8083/nova', // 孜祎
+        target: 'http://192.168.8.130:8083/nova', // 孜祎
         secure: false, // proxy https
         changeOrigin: true,
         pathRewrite: {
@@ -73,6 +73,16 @@ module.exports = {
     assetsRoot: path.resolve(__dirname, '../dailyproductionentrypc'),
     assetsSubDirectory: 'dailyproductionentrypcFrom',
     assetsPublicPath: '/nova/pages/dailyproductionentrypc/',
+
+    /* ----- 手机端测试 ----- */
+    // // Template for index.html
+    // index: path.resolve(__dirname, '../asd/index.html'),
+    //
+    // // Paths
+    // assetsRoot: path.resolve(__dirname, '../asd'),
+    // assetsSubDirectory: 'static_web',
+    // assetsPublicPath: './',
+    /* ----- 手机端测试 ----- */
 
     /**
      * Source Maps

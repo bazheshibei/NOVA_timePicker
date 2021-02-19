@@ -10,9 +10,10 @@ const store = new Vuex.Store({
   modules: {},
 
   state: {
-    nowCodeType: 'Prod', //     当前代码类型
+    nowCodeType: 'Dev', //     当前代码类型
     codeObj: { Dev, Prod }, // 代码类型 { Dev: '开发', Prod: '生产' }
     /**/
+    // filterNodeData: {},
     helpText: '', //      帮助文字
     activeId: '', //      当前工厂ID
     apiParams: {}, //     请求[详情列表]时的参数

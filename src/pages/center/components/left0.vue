@@ -6,7 +6,7 @@
 
     <!-- 过滤input -->
     <div  class="filterInputBox" ref="filterInput">
-      <el-input v-model="filterText" size="mini" clearable placeholder="请输入工厂|班组|项目名称" @change="inputChange"></el-input>
+      <el-input v-model="filterText" size="mini" clearable placeholder="请输入工厂|班组|项目名称"></el-input>
     </div>
 
     <!-- 树状组件 -->
@@ -54,21 +54,19 @@
 <script>
 import { mapState } from 'vuex'
 import ComLeftAlert from './leftAlert.vue'
-import Tool from '@/store/tool.js'
 export default {
   components: { ComLeftAlert },
   data() {
     return {
-      showDialog: false, //  是否显示弹出层
-      filterText: '', //     过滤文字
-      treeStyle: {}, //      列表树样式
-      showArr: [], //        展开项:node-key="index"绑定字段
-      defaultProps: { //     列表树绑定值
+      showDialog: false, // 是否显示弹出层
+      filterText: '', //    过滤文字
+      treeStyle: {}, //     列表树样式
+      showArr: [], //       展开项:node-key="index"绑定字段
+      defaultProps: { //    列表树绑定值
         children: 'data',
         label: 'label'
       },
-      // filterNodeData: {}, // 列表树筛选后需要请求的数据 { 工厂: { 班组: { 项目: true } } }
-      alertData: {} //       弹出层用到的数据
+      alertData: {} //      弹出层用到的数据
     }
   },
   created() {
@@ -138,27 +136,11 @@ export default {
      */
     filterNode(value, data) {
       if (!value) return true
-      const textArr = value.split(' ')
       const { selectObj = {} } = data
       for (const x in selectObj) {
-        for (let i = 0; i < textArr.length; i++) {
-          if (textArr[i] && x.indexOf(textArr[i]) !== -1) {
-            return true
-          }
+        if (x.indexOf(value) !== -1) {
+          return true
         }
-      }
-    },
-    /**
-     * [筛选 input 发生变化，触发搜索多条]
-     */
-    inputChange(event) {
-      if (event) {
-        const { leftTreeData = [] } = this
-        const params = Tool.dressingByScreening(leftTreeData, event)
-        this.$store.commit('saveData', { name: 'activeId', obj: event })
-        this.$store.commit('saveData', { name: 'apiParams', obj: params })
-        /** 请求：详情列表 **/
-        this.$store.dispatch('A_dataList')
       }
     },
     /**
@@ -194,29 +176,27 @@ export default {
       for (const x in obj) {
         arr.push(obj[x])
       }
-      // this.showArr = arr // 点击 工厂名称 会展开下属 所有班组
-      const { pid, provider_id = '', plant_group_id = '', daily_production_entry_id = '', item_id = '' } = data
-      let activeId = ''
-      let params = {}
-      if (pid === 1) {
-        activeId = `${provider_id}`
-        params = { plant_id: provider_id } //                                              { 工厂ID }
-      } else if (pid === 2) {
-        activeId = `${provider_id}_${plant_group_id}`
-        params = { plant_id: provider_id, plant_group_id } //                              { 工厂ID, 班组ID }
-      } else if (pid === 3) {
-        if (plant_group_id === 'dpc') {
-          activeId = `${provider_id}_${plant_group_id}_${item_id}`
-          params = { plant_id: provider_id, plant_group_id, item_id } //                   { 工厂ID, 待排产, item_id }
-        } else {
+      this.showArr = arr
+      /* 剔除：待排产 && 记录当前工厂ID */
+      const { pid, label, provider_id = '', plant_group_id = '', daily_production_entry_id = '' } = data
+      if (label !== '待排产') {
+        let activeId = ''
+        let params = {}
+        if (pid === 1) {
+          activeId = `${provider_id}`
+          params = { plant_id: provider_id } //                                            { 工厂ID }
+        } else if (pid === 2) {
+          activeId = `${provider_id}_${plant_group_id}`
+          params = { plant_id: provider_id, plant_group_id } //                            { 工厂ID, 班组ID }
+        } else if (pid === 3) {
           activeId = `${provider_id}_${plant_group_id}_${daily_production_entry_id}`
           params = { plant_id: provider_id, plant_group_id, daily_production_entry_id } // { 工厂ID, 班组ID, 日产量项目工厂ID }
         }
+        this.$store.commit('saveData', { name: 'activeId', obj: activeId })
+        this.$store.commit('saveData', { name: 'apiParams', obj: params })
+        /** 请求：详情列表 **/
+        this.$store.dispatch('A_dataList')
       }
-      this.$store.commit('saveData', { name: 'activeId', obj: activeId })
-      this.$store.commit('saveData', { name: 'apiParams', obj: [params] })
-      /** 请求：详情列表 **/
-      this.$store.dispatch('A_dataList')
     },
     /**
      * [递归]

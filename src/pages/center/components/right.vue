@@ -6,7 +6,7 @@
 
     <!-- 顶部注释 -->
     <div class="topBox" ref="topBox">
-      <div class="topItem">
+      <div class="topItemBox">
         <div class="topItem" v-for="(item, index) in topArr" :key="'color_' + index">
           <div v-if="item.type === 'color'" class="topItemColor" :style="{ background: colorObj[item.color] }"></div>
           <i v-if="item.type === 'flag'" class="el-icon-s-flag topItemColor" :style="{ color: colorObj[item.color] }"></i>
@@ -365,15 +365,24 @@ export default {
   align-items: center;
   justify-content: space-between;
 }
+.topItemBox {
+  overflow-x: auto;
+  margin-right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 1;
+}
 .topItem {
+  white-space: nowrap;
   margin-right: 20px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
 }
 .topItemColor {
-  width: 12px;
-  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
   font-size: 12px;
 }
 

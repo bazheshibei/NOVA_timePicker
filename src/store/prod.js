@@ -13,11 +13,11 @@ const Prod = {}
  */
 Prod.A_treeAll = function (state, { that = {} }) {
   const name = '列表树'
-  // const obj = { userid: '40674d3bf2b84bf48b2a73db0d5af2ee' }
-  const obj = { userid: '' }
+  const obj = { userid: '965BAD8F4EF5C14CE4F607E77D30B9B5' } // 40674d3bf2b84bf48b2a73db0d5af2ee
+  // const obj = { userid: '' }
   const suc = function (res) {
-    // console.log('列表树 ----- ', res)
-    // localStorage.setItem('列表树', JSON.stringify(res))
+    console.log('列表树 ----- ', res)
+    localStorage.setItem('列表树', JSON.stringify(res))
     state.leftTreeData = Tool.returnTreeData(res.data)
     /* 筛选 */
     setTimeout(function () {
@@ -25,46 +25,7 @@ Prod.A_treeAll = function (state, { that = {} }) {
       if (filterText) {
         that.filterText = filterText
         localStorage.removeItem('NOVA_dailyproductionentrypc')
-        /* 点击第一个选项 */
-        const { tree = {} } = that.$refs
-        const { $el = {} } = tree
-        const { childNodes = [] } = $el
-        let isBreak = false
-        for (let i = 0; i < childNodes.length; i++) {
-          /* 筛选：工厂 */
-          const item = childNodes[i] || {}
-          if (item.innerText.indexOf(filterText) !== -1) {
-            item.click()
-            isBreak = true
-            break
-          }
-          /* 筛选：班组 */
-          const list_1 = item.children || []
-          for (let j = 0; j < list_1.length; j++) {
-            const val = list_1[j] || {}
-            if (val.innerText.indexOf(filterText) !== -1) {
-              item.click()
-              isBreak = true
-              break
-            }
-            /* 筛选：项目 */
-            const list_2 = val.children || []
-            for (let m = 0; m < list_2.length; m++) {
-              const div = list_2[m]
-              if (div.innerText.indexOf(filterText) !== -1) {
-                item.click()
-                isBreak = true
-                break
-              }
-            }
-            if (isBreak) {
-              break
-            }
-          }
-          if (isBreak) {
-            break
-          }
-        }
+        that.inputChange(filterText)
       }
     }, 0)
   }
@@ -79,8 +40,8 @@ Prod.A_dataList = function (state, { f5 = false }) {
   if (!rightTableData[activeId] || f5) {
     /* 发起请求 */
     const name = '详情列表'
-    // const obj = Object.assign({}, { userid: '40674d3bf2b84bf48b2a73db0d5af2ee' }, apiParams)
-    const obj = Object.assign({}, { userid: '' }, apiParams)
+    // const obj = Object.assign({}, { userid: '40674d3bf2b84bf48b2a73db0d5af2ee' }, { apiParams: JSON.stringify(apiParams) })
+    const obj = Object.assign({}, { userid: '' }, { apiParams: JSON.stringify(apiParams) })
     const suc = function (res) {
       // console.log('请求：详情列表 ----- ', res)
       // localStorage.setItem('详情列表', JSON.stringify(res))
