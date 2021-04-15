@@ -2,10 +2,10 @@
 <!-- 左侧区域 -->
 
 <template>
-  <div class="pageLeftBox">
+  <div class="pageLeftBox" :style="isPc ? {} : { width: '20%' }">
 
     <!-- 过滤input -->
-    <div  class="filterInputBox" ref="filterInput">
+    <div  class="filterInputBox" ref="filterInput" :style="isPc ? {} : { width: 'calc(20% - 10px)' }">
       <el-input v-model="filterText" size="mini" clearable placeholder="请输入工厂|班组|项目名称" @change="inputChange"></el-input>
     </div>
 
@@ -34,7 +34,7 @@
         <!-- 标题：第二级 -->
         <p v-else class="comTreeLineName">{{data.label}}</p>
         <!-- 下拉按钮组：第一级 -->
-        <el-dropdown v-if="data.pid === 1" class="comTreeLineIcon" trigger="click" @command="handleCommand(data.index, $event)">
+        <el-dropdown v-if="data.pid === 1 && isPc" class="comTreeLineIcon" trigger="click" @command="handleCommand(data.index, $event)">
           <span class="el-dropdown-link">
             <i class="el-icon-edit-outline"></i>
           </span>
@@ -101,7 +101,7 @@ export default {
     }
   },
   computed: {
-    ...mapState(['leftTreeData'])
+    ...mapState(['leftTreeData', 'isPc'])
   },
   methods: {
     /**
@@ -278,6 +278,9 @@ export default {
 </style>
 
 <style>
+.filterInputBox > .el-input > .el-input__inner {
+  padding-right: 28px !important;
+}
 /*** 树状组件 ***/
 .filterInputBox { /* 搜索框 */
   margin: 0 !important;
